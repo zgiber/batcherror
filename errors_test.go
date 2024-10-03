@@ -25,7 +25,7 @@ func TestBatchError(t *testing.T) {
 	}
 
 	failedBatchItemIdx := map[int]struct{}{}
-	for _, err := range UnwrapJoinedErrors(joinedErrs) {
+	for _, err := range Unwrap(joinedErrs) {
 		batchErr := new(BatchError)
 		if errors.As(err, &batchErr) {
 			failedBatchItemIdx[batchErr.Idx()] = struct{}{}
@@ -37,11 +37,11 @@ func TestBatchError(t *testing.T) {
 		require.Equal(t, testBatch[idx], failed, "item [%v] in testBatch should be %v", idx, failed)
 	}
 
-	m := MapIndexedErrors(joinedErrs)
+	m := Map(joinedErrs)
 	require.Len(t, m, 4)
 	for idx, err := range m {
 		require.True(t, testBatch[idx])
-		require.Equal(t, err.Error(), AtIdx(joinedErrs, idx).Error())
+		require.Equal(t, err.Error(), At(joinedErrs, idx).Error())
 	}
 
 	msg := Short(joinedErrs, 3)

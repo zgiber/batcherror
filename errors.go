@@ -12,7 +12,7 @@ type multiErr interface {
 	Unwrap() []error
 }
 
-// BatchError is a special error type that can be used to allow individual
+// BatchError type that can be used to allow individual
 // failures in batch operations without failing the full batch.
 // BatchError references the index in the batch where the error occurred,
 // enabling the caller to decide whether to continue or not.
@@ -32,13 +32,13 @@ type multiErr interface {
 // Example for error handling:
 //
 //	for idx, batchItem := range batchItems {
-//			if err := batcherror.AtIdx(idx); err != nil {
+//			if err := batcherror.At(idx); err != nil {
 //				// handle error...
 //			}
 //		}
 type BatchError struct {
-	idx int
 	err error
+	idx int
 }
 
 func New(err error, idx int) *BatchError {
@@ -60,9 +60,9 @@ func (b *BatchError) Idx() int {
 	return b.idx
 }
 
-// AtIdx returns an error if the provided err is a joinError type and
+// At returns an error if the provided err is a joinError type and
 // any of the joined errors is a BatchError that is at the specified idx.
-func AtIdx(err error, idx int) error {
+func At(err error, idx int) error {
 	var match error
 	collect := func(e error) {
 		be := new(BatchError)
@@ -72,13 +72,12 @@ func AtIdx(err error, idx int) error {
 			}
 		}
 	}
-	traverseJoinedErrors(err, collect)
+	traverse(err, collect)
 	return match
 }
 
-// MapIndexedErrors returns a map where the batch errors are mapped
-// to the index of the batch item they occurred at.
-func MapIndexedErrors(err error) map[int]error {
+// Map the errors to the respective indices they occurred at.
+func Map(err error) map[int]error {
 	m := map[int]error{}
 	collect := func(e error) {
 		be := new(BatchError)
@@ -86,25 +85,25 @@ func MapIndexedErrors(err error) map[int]error {
 			m[be.Idx()] = be
 		}
 	}
-	traverseJoinedErrors(err, collect)
+	traverse(err, collect)
 	return m
 }
 
-// UnwrapJoinedErrors returns the slice of errors that is the result of using errors.Join
+// Unwrap returns the slice of errors that is the result of using errors.Join
 // If err does not implement MultiErr then it is returned as the single item in the slice.
-func UnwrapJoinedErrors(err error) []error {
+func Unwrap(err error) []error {
 	errs := []error{}
 	collect := func(e error) {
 		errs = append(errs, e)
 	}
 
-	traverseJoinedErrors(err, collect)
+	traverse(err, collect)
 	return errs
 }
 
-// traverseJoinedErrors traverses the tree of wrapped errors (DFS) and collect them
+// traverse traverses the tree of wrapped errors (DFS) and collect them
 // using the provided function.
-func traverseJoinedErrors(err error, collect func(error)) {
+func traverse(err error, collect func(error)) {
 	e, ok := err.(multiErr)
 	if !ok {
 		collect(err)
@@ -118,7 +117,7 @@ func traverseJoinedErrors(err error, collect func(error)) {
 	}
 
 	for _, e := range errs {
-		traverseJoinedErrors(e, collect)
+		traverse(e, collect)
 	}
 }
 
@@ -128,7 +127,7 @@ func Short(err error, maxMessages int) error {
 	if err == nil {
 		return nil
 	}
-	errs := UnwrapJoinedErrors(err)
+	errs := Unwrap(err)
 	var msg string
 	if len(errs) > maxMessages {
 		msg = errors.Join(errs[:maxMessages]...).Error()
