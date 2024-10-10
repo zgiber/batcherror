@@ -2,6 +2,28 @@
 
 Keep track of individual errors within a batched process.
 
+## Why?
+
+Sometimes a batch operation is required in an implementation of an existing interface that has a singular error return type.
+If it is required to act on individual iterations performed during the batch processing, this package can help with conveying and
+consulting individual errors using the returned error type. It works well with the errors package by the standard library.
+
+## Why not?
+
+Often it is simpler to return a custom type from a batch process, something like:
+
+```go
+
+type batchResult struct {
+	outputData any
+	err error
+}
+
+func myBatchFunc(inputData []any) []batchResult {
+	// ...
+}
+```
+
 ## Usage
 
 ```go
